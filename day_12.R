@@ -15,10 +15,10 @@ navigate <- function(wp, type) { #type = 'xy' for part1 and 'wp' for part2
     if (dir %in% c("L", "R")) wp <- as.numeric(ro_f(ifelse(dir == "R", -1, 1) * n / 90) %*% wp)
     if (dir == "F") xy <- xy + n * wp
     hlp <- get(type)
-    if (dir == "N") hlp[2] = hlp[2] + n
-    if (dir == "E") hlp[1] = hlp[1] + n
-    if (dir == "S") hlp[2] = hlp[2] - n
-    if (dir == "W") hlp[1] = hlp[1] - n
+    if (dir == "N") hlp[2] <- hlp[2] + n
+    if (dir == "E") hlp[1] <- hlp[1] + n
+    if (dir == "S") hlp[2] <- hlp[2] - n
+    if (dir == "W") hlp[1] <- hlp[1] - n
     assign(type, hlp)
   }
   sum(abs(xy))
