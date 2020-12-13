@@ -3,16 +3,14 @@ data12 <- tidyr::separate(readr::read_table("Input/day12.txt", col_names = "x"),
 
 navigate <- function(wp, type) { #type = 'xy' for part1 and 'wp' for part2
   xy <- c(0, 0)
-  ro_f <- function(k) { #k is the number ccw turns by 90 degrees
-    round(matrix(c(cos( k / 2 * pi), sin(k / 2 * pi),
-                   sin(-k / 2 * pi), cos(k / 2 * pi)), 2, 2), 2)
-  }
+  #k is the number ccw turns by 90 degrees, aka multiplication with 0+1i
+  rotate <- function(v, k) c(Re((v[1] + v[2]*1i)*1i^k), Im((v[1] + v[2]*1i)*1i^k))
 
   for (i in seq_len(nrow(data12))) {
-    dir = data12$dir[i]
-    n = data12$n[i]
+    dir <- data12$dir[i]
+    n <- data12$n[i]
 
-    if (dir %in% c("L", "R")) wp <- as.numeric(ro_f(ifelse(dir == "R", -1, 1) * n / 90) %*% wp)
+    if (dir %in% c("L", "R")) wp <- rotate(wp, ifelse(dir == "R", -1, 1) * n / 90)
     if (dir == "F") xy <- xy + n * wp
     hlp <- get(type)
     if (dir == "N") hlp[2] <- hlp[2] + n
