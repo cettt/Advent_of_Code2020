@@ -10,7 +10,7 @@ run_day15 <- function(n, input) {
     tab_l[y + 1] <- turn #update tab_l
     y <- y2 * (y2 != turn) #if y2 == turn then y had never been said before in which case y <- 0
   }
-  return(which(                                             tab_l == n) - 1)
+  return(which(tab_l == n) - 1)
 }
 
 #part 1--------
