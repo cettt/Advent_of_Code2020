@@ -1,56 +1,32 @@
-data19 <- read.table("Input/day19.txt", sep = ";")[,1]
-rules <- rep("", max(idx))
+data19 <- read.table("Input/day19.txt", sep = ";")[, 1]
 
-idx <- as.numeric(gsub("^(\\d+).*", "\\1", data19[grepl("^[1-9]", data19)]))
-rules[idx] <- gsub("^\\d+: ", "", data19[grepl("^[1-9]", data19)])
-
-
-find_words <- function(rule) {
-  if (!grepl("\\d", rule)) return(rule)
-  if (!grepl(" ", rule)) return(find_words(rules[as.numeric(rule)]))
-
-  y <- strsplit(strsplit(rule, " \\| ")[[1]], " ")
-
-  res <- lapply(y, function(z) sapply(z, function(w) find_words(rules[as.numeric(w)])))
-  unlist(lapply(res, function(z) {
-    if (is.matrix(z)) {
-      if (nrow(z) > 1) as.character(outer(z[,1], z[,2], paste0)) else  paste0(z, collapse = "")
-    } else if (is.list(z)) {
-      apply(expand.grid(z), 1, function(w) paste0(w, collapse = ""))
-    } else paste0(z, collapse = "")
-  }
-  ))
-}
-
-check_word <- function(x, type = "part1") {
-
-  x1 <- substr(x, 1, nchar(r42[1]))
-  xn <- substr(x, nchar(x)- nchar(r31[1]) + 1, nchar(x))
-  if (!xn %in% r31) return(FALSE)
-
-  while (x1 %in% r42 & xn %in% r31) {#check rule 11 n times
-    x <- substr(x, nchar(r42[1]) + 1, nchar(x) - nchar(r31[1]))
-    x1 <- substr(x, 1, nchar(r42[1]))
-    xn <- substr(x, nchar(x) - nchar(r31[1]) + 1, nchar(x))
-    if (type == "part1") break
-  }
-
-  if (!x1 %in% r42) return(FALSE)
-
-  while (x1 %in% r42) {#check rule 8 n times
-    x <- substr(x, nchar(r42[1]) + 1, nchar(x))
-    x1 <- substr(x, 1, nchar(r42[1]))
-    if (type == "part1") break
-  }
-  return(x == "")
-}
-
+idx <- as.numeric(gsub("^(\\d+).*", "\\1", data19[grepl("^\\d", data19)]))
+rules <- rep("", max(idx) + 1) #rules pos is shifted by one: pos 1 is rule 0 etc.
+rules[idx + 1] <- gsub("^\\d+: ", "", data19[grepl("^\\d", data19)])
 words <- data19[!grepl("^\\d", data19)]
-r42 <- find_words(42)
-r31 <- find_words(31)
+
+make_regex <- function(rule) {
+  if (!grepl("\\d", rule)) return(rule)
+  if (grepl("^\\d+$", rule)) return(make_regex(rules[as.numeric(rule) + 1]))
+
+  y <- strsplit(rule, " ")[[1]]
+  y[grepl("\\d", y)] <- sapply(y[grepl("\\d", y)], make_regex)
+  gsub("\\(([^\\d])\\)", "\\1", paste0("(", paste0(y, collapse = ")("), ")"))
+}
 
 # part1----------
-sum(sapply(words, check_word))
+sum(grepl(paste0("^", make_regex(rules[1]), "$"), words))
 
 #part2---------
-sum(sapply(words, check_word, type = "part2"))
+r31 <- make_regex(rules[32]) #the regex in question for part 2 is: r31 m times...
+r42 <- make_regex(rules[43]) # followed by r31 n times r42 n times
+
+check_word <- function(word) {
+  if (!grepl(paste0("(", r31, ")$"), word)) return(FALSE)
+  while (grepl(paste0("^(", r42, ")"), word) & grepl(paste0("(", r31, ")$"), word)) {
+    word <- sub(paste0("^(", r42, ")"), "", sub(paste0("(", r31, ")$"), "", word))
+  }
+  grepl(paste0("^(", r42, ")+$"), word)
+}
+
+sum(sapply(words, check_word))
