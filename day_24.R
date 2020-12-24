@@ -1,42 +1,35 @@
 data24 <- read.table("Input/day24.txt")[,1]
 
-
-z <- data24[1]
-f <- function(z) {
-  z <- strsplit(gsub("([ew])", "\\1-", z), "-")[[1]]
-  y <- (sum(grepl("n", z)) - sum(grepl("s", z))) * 1/2
-  x <- sum(z == "e") - sum(z == "w") + 1/2*sum(grepl("[ns]e", z)) - 1/2*sum(grepl("[ns]w", z))
-  return(c(x,y))
+find_hex <- function(path) {
+  tab <- table(factor(path, levels = c("nw", "ne", "sw", "se", "w", "e")))
+  c(x = as.numeric((tab[2] + tab[4] - tab[1] - tab[3]) / 2 + tab[6]- tab[5]),
+    y = (sum(tab[1:2]) - sum(tab[3:4])) / 2)
 }
 
-#part 1------------
-sum(table(apply(sapply(data24, f), 2, paste, collapse = ",")) %% 2 == 1)
+xy <- t(sapply(strsplit(gsub("([ew])", "\\1-", data24), "-"), find_hex))
+xy <- aggregate(seq_along(xy[, 1]) ~ x + y, data = xy, function(z) length(z) %% 2)
 
-#part 2-----------
-library(dplyr)
-map_black <- count(as.data.frame(unname(t(sapply(data24, f)))), V1, V2) %>%
-  filter(n %% 2 == 1) %>% rename(x = V1, y = V2)
+#part1---------
+sum(xy[,3])
 
-whole_map <- rbind(
-  expand.grid(x = seq(-114, 115), y = seq(-65, 66)),
-  expand.grid(x = seq(-114.5, 115.5), y = seq(-65.5, 66.5))
-  )
+#part2-------
+x_range <- range(xy[, 1]) + c(-100, 100)
+y_range <- range(xy[, 2]) + c(-50, 50)
 
-whole_map <- whole_map %>%
-  semi_join(map_black, by = c("x", "y")) %>% mutate(col = 1) %>%
-  bind_rows(anti_join(whole_map, map_black, by = c("x", "y")) %>% mutate(col = 0)) %>%
-  mutate(id = 1:n())
+map_mat <- rbind(expand.grid(x = seq(x_range[1], x_range[2]),
+                             y = seq(round(y_range[1]), round(y_range[2]))),
+                 expand.grid(x = seq(x_range[1] - 1/2, x_range[2] + 1/2),
+                             y = seq(y_range[1], y_range[2])))
 
-
-whole_map %>% count(col)
+map_mat <- merge(map_mat, xy, all.x = TRUE)
+map_mat[is.na(map_mat[, 3]), 3] <- 0
 
 make_lookup <- function(k) {
-  x0 <- whole_map[k, 1]
-  y0 <- whole_map[k, 2]
-  filter(whole_map, abs(x - x0) <= 1, abs(y - y0) <= 1/2) %>% pull(id)
+  xy0 <- as.numeric(map_mat[k, 1:2])
+  which(abs(map_mat[,1] - xy0[1]) <= 1 & abs(map_mat[,2] - xy0[2]) <= 1/2)
 }
 
-lookup <- lapply(seq_along(whole_map[,1]), make_lookup)
+lookup <- lapply(seq_along(map_mat[,1]), make_lookup)
 
 update_map <- function(k, themap) {
   z <- themap[k]
@@ -44,8 +37,7 @@ update_map <- function(k, themap) {
   if (z == 1 & (nbl == 1 | nbl > 3)) 0 else if (z == 0 & nbl == 2) 1 else z
 }
 
-map <- whole_map[,3]
-
+map <- map_mat[, 3]
 for (s in 1:100) map <- sapply(seq_along(map), update_map, map)
-
 sum(map)
+
