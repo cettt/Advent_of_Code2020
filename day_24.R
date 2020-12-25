@@ -1,35 +1,31 @@
 data24 <- read.table("Input/day24.txt")[,1]
 
-find_hex <- function(path) {
-  tab <- table(factor(path, levels = c("nw", "ne", "sw", "se", "w", "e")))
-  c(x = as.numeric((tab[2] + tab[4] - tab[1] - tab[3]) / 2 + tab[6]- tab[5]),
-    y = (sum(tab[1:2]) - sum(tab[3:4])) / 2)
+find_hex <- function(path) { #complex doubled coordinates
+  x <- table(factor(path, levels = c("nw", "sw", "w", "ne", "se", "e")))
+  sum(x[4:6]) - sum(x[1:3]) + x[6] - x[3] + (x[1] + x[4] - x[2] - x[5])*1i
 }
 
-xy <- t(sapply(strsplit(gsub("([ew])", "\\1-", data24), "-"), find_hex))
-xy <- aggregate(seq_along(xy[, 1]) ~ x + y, data = xy, function(z) length(z) %% 2)
+hex_co <- sapply(strsplit(gsub("([ew])", "\\1-", data24), "-"), find_hex)
 
 #part1---------
-sum(xy[,3])
+sum(table(hex_co) %% 2 == 1)
 
 #part2-------
-x_range <- range(xy[, 1]) + c(-100, 100)
-y_range <- range(xy[, 2]) + c(-50, 50)
+black_hex <- as.complex(names(table(hex_co)[table(hex_co) %% 2 == 1]))
 
-map_mat <- rbind(expand.grid(x = seq(x_range[1], x_range[2]),
-                             y = seq(round(y_range[1]), round(y_range[2]))),
-                 expand.grid(x = seq(x_range[1] - 1/2, x_range[2] + 1/2),
-                             y = seq(y_range[1], y_range[2])))
+co_grid <- apply(expand.grid(
+  r = seq(from = min(Re(black_hex)) - 101, to = max(Re(black_hex)) + 101),
+  i = seq(from = min(Im(black_hex)) - 101, to = max(Im(black_hex)) + 101)
+), 1, function(z) z[1] + z[2] * 1i)
 
-map_mat <- merge(map_mat, xy, all.x = TRUE)
-map_mat[is.na(map_mat[, 3]), 3] <- 0
+co_grid <- co_grid[(Re(co_grid) + Im(co_grid)) %% 2 == 0]
 
 make_lookup <- function(k) {
-  xy0 <- as.numeric(map_mat[k, 1:2])
-  which(abs(map_mat[,1] - xy0[1]) <= 1 & abs(map_mat[,2] - xy0[2]) <= 1/2)
+  z <- co_grid[k]
+  k_vec <- seq(max(1, k - 140), min(length(co_grid), k + 140))
+  k_vec <- k_vec[abs(Im(z - co_grid[k_vec])) <= 1]
+  k_vec[abs(z - co_grid[k_vec]) <= 2]
 }
-
-lookup <- lapply(seq_along(map_mat[,1]), make_lookup)
 
 update_map <- function(k, themap) {
   z <- themap[k]
@@ -37,7 +33,11 @@ update_map <- function(k, themap) {
   if (z == 1 & (nbl == 1 | nbl > 3)) 0 else if (z == 0 & nbl == 2) 1 else z
 }
 
-map <- map_mat[, 3]
-for (s in 1:100) map <- sapply(seq_along(map), update_map, map)
-sum(map)
+lookup <- lapply(seq_along(co_grid),  make_lookup)
+map <- ifelse(co_grid %in% black_hex, 1, 0)
 
+for (s in 1:100) {
+  idx <- seq(max(1, min(which(map == 1)) - 140), min(length(co_grid), max(which(map == 1)) + 140))
+  map[idx] <- sapply(idx, update_map, map)
+}
+sum(map)
