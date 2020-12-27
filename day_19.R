@@ -18,15 +18,14 @@ make_regex <- function(rule) {
 sum(grepl(paste0("^", make_regex(rules[1]), "$"), words))
 
 #part2---------
-r31 <- make_regex(rules[32]) #the regex in question for part 2 is: r31 m times...
-r42 <- make_regex(rules[43]) # followed by r31 n times r42 n times
+r31 <- paste0("(", make_regex(rules[32]), ")$") #the regex in question for part 2 is: r31 m times...
+r42 <- paste0("^(", make_regex(rules[43]), ")") # followed by r31 n times r42 n times
 
 check_word <- function(word) {
-  if (!grepl(paste0("(", r31, ")$"), word)) return(FALSE)
-  while (grepl(paste0("^(", r42, ")"), word) & grepl(paste0("(", r31, ")$"), word)) {
-    word <- sub(paste0("^(", r42, ")"), "", sub(paste0("(", r31, ")$"), "", word))
-  }
-  grepl(paste0("^(", r42, ")+$"), word)
+  if (!grepl(r31, word)) return(FALSE)
+  while (grepl(r31, word)) word <- sub(r42, "", sub(r31, "", word))
+
+  grepl(paste0(r42, "+$"), word)
 }
 
 sum(sapply(words, check_word))

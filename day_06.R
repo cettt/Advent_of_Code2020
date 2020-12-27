@@ -1,16 +1,9 @@
-library(tidyverse)
-
-data06 <- read.table("Input/day06.txt", blank.lines.skip = FALSE) %>%
-  setNames("x") %>%
-  mutate(id = cumsum(x == "")) %>%
-  group_by(id) %>%
-  summarise(
-    y = map(paste0(x[x != ""], collapse = ""), str_count, pattern = letters),
-    n = length(x[x != ""]), .groups = "drop",
-  )
+data06 <- c("" , read.table("Input/day06.txt", blank.lines.skip = FALSE)[,1])
+id <- cumsum(data06 == "")
+res <- aggregate(data06, list(id), function(x) table(strsplit(paste0(x[x!= ""], collapse = ""), "")[1]))
 
 # part1----------------
-summarise(data06, res = sum(map_int(y, ~length(.x[.x > 0]))))
+sum(sapply(res[,2], length))
 
 # part2----------------
-summarise(data06, res = sum(map2_int(y, n, ~length(.x[.x == .y]))))
+sum(sapply(seq_along(res[,2]), function(i) sum(res[i, 2][[1]] == sum(id == i) - 1)))

@@ -1,32 +1,28 @@
-library(tidyverse)
+data04 <- read.table("Input/day04.txt", sep = ";", fill = TRUE, comment.char = "",
+                blank.lines.skip = FALSE, col.names = "x")
 
-data04 <- read_file("Input/day04.txt") %>%
-  str_split(pattern = "\r\n", simplify = TRUE) %>% 
-  tibble(x = as.character(.)) %>%
-  mutate(id = cumsum(x == "") + 1) %>%
-  group_by(id) %>%
-  summarise(x = paste0(x[x != ""], collapse = " "), .groups = "drop") %>%
-  separate(x, sep = "\\s+", into = letters[1:9], fill = "right") %>%
-  gather(dummy, y, -id, na.rm = TRUE) %>%
-  select(-dummy) %>%
-  separate(y, into = c("type", "value"), sep = ":") %>%
-  spread(type, value)
+x <- aggregate(data04, by = list(cumsum(data04[,1] == "") + 1),
+                      FUN = function(x) paste0(x, collapse =" "))$x
+#part 1------
+idx <- grepl("eyr", x) & grepl("byr", x) & grepl("iyr", x) & grepl("ecl", x) &
+  grepl("hcl", x) & grepl("hgt", x) & grepl("pid", x)
+sum(idx)
 
-# part1---------
-data04 %>%
-  filter(across(-c("id", "cid"), ~!is.na(.x))) %>% 
-  nrow()
+#part 2------
+y <- data.frame(x = x[idx])
 
-# part2----------
-data04 %>% 
-  filter(
-    between(parse_number(byr), 1920, 2002), 
-    between(parse_number(iyr), 2010, 2020),
-    between(parse_number(eyr), 2020, 2030),
-    ecl %in% c("amb", "blu", "brn", "gry", "grn", "hzl", "oth"),
-    grepl("^\\d{9}$", pid),
-    grepl("^#[0-9,a-f]{6}$", hcl),
-    (grepl("cm", hgt) & between(parse_number(hgt), 150, 193) | 
-       grepl("in", hgt) & between(parse_number(hgt), 59, 76)) 
-  ) %>%
-  nrow()
+y$eyr <- as.numeric(sub(".*eyr:(\\d+).*", "\\1", y$x))
+y$byr <- as.numeric(sub(".*byr:(\\d+).*", "\\1", y$x))
+y$iyr <- as.numeric(sub(".*iyr:(\\d+).*", "\\1", y$x))
+y$ecl <- sub(".*ecl:([a-z]+).*", "\\1", y$x)
+y$hcl <- sub(".*hcl:(#[a-f0-9]{6}).*", "\\1", y$x)
+y$pid <- sub(".*pid:(\\d+).*", "\\1", y$x)
+y$hgt <- as.numeric(sub(".*hgt:(\\d+).*", "\\1", y$x))
+y$hgt_u <- sub(".*hgt:\\d+([^ ]+).*", "\\1", y$x)
+
+sum(y$byr >= 1920 & y$byr <= 2002 & y$iyr >= 2010 & y$iyr <= 2020 & y$eyr >= 2020 &
+    y$eyr <= 2030 & y$ecl %in% c("amb", "blu", "brn", "gry", "grn", "hzl", "oth") &
+    nchar(y$hcl) == 7 & nchar(y$pid) == 9 & (
+      (y$hgt_u == "cm" & y$hgt >= 150 & y$hgt <= 193) |
+        (y$hgt_u == "in" & y$hgt >= 59 & y$hgt <= 76)
+    ))

@@ -47,35 +47,31 @@ n <- sqrt(nrow(distinct(data20, tile)))
 immat2 <- matrix(0, nc = n, nr = n)
 
 #backtracking function------
-find_tile <- function(i, j) {
+find_tile <- function(k) {
 
-  if (!(i == 1 & j == 1)) {
-    if (i > 1) .bd <- filter(data20, id == immat2[i - 1, j]) %>% pull(b_d)
-    if (j > 1) .br <- filter(data20, id == immat2[i, j - 1]) %>% pull(b_r)
+  if (k > 1) {
+    if (k %% n != 1) .bd <- filter(data20, id == immat2[k - 1]) %>% pull(b_d)
+    if (k > n) .br <- filter(data20, id == immat2[k - n]) %>% pull(b_r)
 
     all_id <- data20 %>%
-      {`if`(i > 1, filter(., b_u == .bd), .)} %>%
-      {`if`(j > 1, filter(., b_l == .br), .)} %>%
+      {`if`(k %% n != 1, filter(., b_u == .bd), .)} %>%
+      {`if`(k > n, filter(., b_l == .br), .)} %>%
       anti_join(filter(data20, id %in% as.numeric(immat2)), by = "tile") %>%
-      filter(id > immat2[i, j]) %>% pull(id)
+      filter(id > immat2[k]) %>% pull(id)
 
   } else {
     all_id <- tile_neigbours %>% filter(n_nei == 2) %>%
       semi_join(data20, ., by = "tile") %>%
-      filter(id > immat2[i, j]) %>% pull(id)
+      filter(id > immat2[1]) %>% pull(id)
   }
 
-  if (length(all_id) == 0) {immat2[i, j] <<- 0; return(FALSE)}
-
-  immat2[i, j] <<- all_id[1]; return(TRUE)
+  if (length(all_id) == 0) 0 else all_id[1]
 }
-
 
 k <- 1
 while (k <= n^2) {
-  i <- floor((k - 1) / n) + 1
-  j <- k - (i - 1) * n
-  k <- if (find_tile(i, j)) k + 1 else k - 1
+  immat2[k] <- find_tile(k)
+  k <- if (immat2[k]) k + 1 else k - 1
 }
 
 n2 <- nrow(data20$m[[1]]) - 2
@@ -93,7 +89,7 @@ mon <- read.table("Input/day20_monster.txt", comment.char = "", sep = ";")[,1] %
   as.matrix() %>%
   {which(. == "#")}
 
-check_im <- function(im) {
+count_m <- function(im) { #count monster
   counter <- 0
   for (i in 1:(nrow(im)- 2)) {
     for (j in 1:(ncol(im) - 19)) {
@@ -104,8 +100,4 @@ check_im <- function(im) {
   return(counter)
 }
 
-create_all_m(immat) %>%
-  mutate(n_monst = map_dbl(m, check_im)) %>%
-  filter(n_monst > 0) %>%
-  mutate(res = map2_dbl(m, n_monst, ~sum(.x == "#") - .y * length(mon))) %>%
-  pull(res)
+sum(immat == "#") - length(mon) * max(sapply(create_all_m(immat)$m, count_m))

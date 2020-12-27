@@ -25,6 +25,7 @@ runcode(data08)
 # part2----------
 for (j in which(!grepl("acc", data08))) {
   x <- data08
-  x[j] <- paste(if_else(grepl("j", x[j]), "", "jmp"), readr::parse_number(x[j]))
+  x[j] <- paste(if (grepl("j", x[j])) "" else "j", readr::parse_number(x[j]))
   y <- runcode(x)
+  if (isTRUE(y)) break
 }

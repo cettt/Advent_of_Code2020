@@ -1,16 +1,16 @@
 data22 <- read.table("Input/day22.txt", sep = ";")[, 1]
 
-x <- as.numeric(data22[cumsum(grepl("Player", data22)) == 1][-1])
-y <- as.numeric(data22[cumsum(grepl("Player", data22)) == 2][-1])
+x <- as.integer(data22[cumsum(grepl("Player", data22)) == 1][-1])
+y <- as.integer(data22[cumsum(grepl("Player", data22)) == 2][-1])
 
 play_combat <- function(x, y, recursion = TRUE, score = FALSE) {
-  k <- 0
-  lookup <- list()
+  k <- 1L
+  lookup <- vector("list", 1000L)
 
-  while (length(x) * length(y) != 0) {
-    k <- k + 1
-    if (any(sapply(lookup, identical, list(x = x, y = y)))) return(TRUE)
-    lookup[[k]] <- list(x = x, y = y)
+  while (length(x) * length(y)) {
+    if (any(sapply(lookup[seq_len(k)], identical, list(x, y)))) return(TRUE)
+    lookup[[k]] <- list(x, y)
+    k <- k + 1L
 
     x1 <- x[1]; y1 <- y[1]
     x <- x[-1]; y <- y[-1]
@@ -22,8 +22,7 @@ play_combat <- function(x, y, recursion = TRUE, score = FALSE) {
 
     if (win) x <- c(x, x1, y1) else y <- c(y, y1, x1)
   }
-
-  if (score) sum(rev(x) * seq_along(x)) + sum(rev(y) * seq_along(y)) else length(x) > 0
+  if (!score) length(x) > 0 else sum(rev(c(x, y)) * seq_along(c(x, y)))
 }
 
 #part 1-------
