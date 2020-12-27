@@ -4,6 +4,8 @@
 .Ruserdata
 *test.txt
 Output/*
+!Output/*.gif
+!Output/*.png
 *test.R
 day04_baseR.R
 Archive/*
